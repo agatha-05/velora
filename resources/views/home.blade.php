@@ -58,6 +58,18 @@
             @forelse($products as $product)
             <div class="group bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-amber-100/50 transition-all duration-500 relative flex flex-col h-full">
                 
+                <div class="absolute top-4 right-4 z-20">
+                    <button onclick="toggleWishlist('{{ $product->id }}', '{{ $product->name }}', '{{ $product->getThumbnailUrl() }}', '{{ $product->price }}', '{{ $product->slug }}')" 
+                            class="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm hover:bg-white transition-all group/heart scale-90 md:scale-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" 
+                             id="heart-icon-{{ $product->id }}"
+                             class="h-5 w-5 text-gray-400 group-hover/heart:text-red-500 transition-colors" 
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                    </button>
+                </div>
+
                 @if($product->is_featured)
                 <div class="absolute top-4 left-4 z-10">
                     <span class="bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase shadow-lg shadow-red-200">Hot</span>
@@ -98,11 +110,6 @@
             </div>
             @empty
             <div class="col-span-full py-20 text-center">
-                <div class="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                    </svg>
-                </div>
                 <p class="text-gray-400 font-medium italic">Belum ada produk untuk kategori ini.</p>
             </div>
             @endforelse
@@ -110,8 +117,27 @@
     </main>
 
     <style>
-        /* Sembunyikan scrollbar pada filter kategori agar rapi di mobile */
         .custom-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+
+    <script>
+        function toggleWishlist(id, name, image, price, slug) {
+            let wishlist = JSON.parse(localStorage.getItem('velora_wishlist')) || [];
+            let index = wishlist.findIndex(item => item.id === id);
+
+            if (index === -1) {
+                wishlist.push({ id, name, image, price, slug });
+            } else {
+                wishlist.splice(index, 1);
+            }
+
+            localStorage.setItem('velora_wishlist', JSON.stringify(wishlist));
+            
+            // MEMANGGIL FUNGSI GLOBAL DI MASTER.BLADE.PHP
+            if (typeof updateWishlistUI === "function") {
+                updateWishlistUI();
+            }
+        }
+    </script>
 @endsection
