@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Poppins', sans-serif; }
-        /* Animasi tambahan agar ikon hati berdetak saat ada isi */
+        body { font-family: 'Poppins', sans-serif; scroll-behavior: smooth; }
+        /* Animasi agar ikon hati berdetak */
         @keyframes heartbeat {
             0% { transform: scale(1); }
             15% { transform: scale(1.3); }
@@ -16,10 +16,16 @@
             100% { transform: scale(1); }
         }
         .animate-heart { animation: heartbeat 0.6s ease-in-out; }
+        
+        /* Gaya untuk Toast Notification */
+        #toast-container { pointer-events: none; }
+        .toast-item { pointer-events: auto; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
     </style>
     @livewireStyles
 </head>
 <body class="bg-gray-50">
+
+    <div id="toast-container" class="fixed top-24 right-5 z-[9999] flex flex-col gap-3"></div>
 
     <nav class="bg-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
@@ -54,11 +60,11 @@
                     <span id="nav-wishlist-count" class="absolute -top-1 -right-1 bg-amber-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full opacity-0 scale-0 transition-all">0</span>
                 </a>
 
-                <a href="#" class="relative p-2 bg-gray-100 rounded-full hover:bg-amber-100 hover:text-amber-600 transition">
+                <a href="{{ route('cart') }}" class="relative p-2 bg-gray-100 rounded-full hover:bg-amber-100 hover:text-amber-600 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 11h14l1 12H4L5 11z" />
                     </svg>   
-                    <span class="absolute -top-1 -right-1 bg-amber-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">0</span>
+                    <span id="nav-cart-count" class="absolute -top-1 -right-1 bg-amber-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full opacity-0 scale-0 transition-all">0</span>
                 </a>
             </div>
         </div>
@@ -90,7 +96,7 @@
         </div>
     </header>
 
-    <main>
+    <main id="koleksi">
         @yield('content')
     </main>
 
@@ -107,39 +113,88 @@
                 | Tel: <a href="tel:+6281234567890" class="hover:underline">+62 812-3456-7890</a>
             </p>
         </div>
-        <div class="mt-6 text-center">
-            <a href="#" class="text-gray-400 hover:text-amber-500 mx-2">Privacy Policy</a> |
-            <a href="#" class="text-gray-400 hover:text-amber-500 mx-2">Terms of Service</a> |
-            <a href="#" class="text-gray-400 hover:text-amber-500 mx-2">Contact Us</a>
-        </div>
     </footer>
 
     @livewireScripts
     <script>
-    /**
-     * TAMBAHAN: Fungsi untuk menambah/menghapus produk dari wishlist
-     */
+    // --- FUNGSI TOAST NOTIFICATION ---
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const colorClass = type === 'success' ? 'bg-amber-600' : 'bg-gray-800';
+        
+        toast.className = `toast-item ${colorClass} text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transform translate-x-12 opacity-0`;
+        toast.innerHTML = `
+            <span class="text-sm font-bold tracking-wide">${message}</span>
+            <button onclick="this.parentElement.remove()" class="text-white/50 hover:text-white">&times;</button>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Trigger animasi masuk
+        setTimeout(() => {
+            toast.classList.remove('translate-x-12', 'opacity-0');
+        }, 10);
+
+        // Hapus otomatis setelah 3 detik
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-[-10px]');
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
+    }
+
+    // --- FUNGSI WISHLIST ---
     function toggleWishlist(id, name, image, price, slug) {
         let wishlist = JSON.parse(localStorage.getItem('velora_wishlist')) || [];
         let index = wishlist.findIndex(item => item.id === id);
 
         if (index === -1) {
-            // Jika tidak ada, tambah ke wishlist
             wishlist.push({ id, name, image, price, slug });
+            showToast(`❤️ ${name} masuk Wishlist!`);
         } else {
-            // Jika sudah ada, hapus dari wishlist
             wishlist.splice(index, 1);
+            showToast(`💔 ${name} dihapus dari Wishlist`, 'info');
         }
 
         localStorage.setItem('velora_wishlist', JSON.stringify(wishlist));
-        
-        // Update tampilan ikon segera setelah klik
         updateHeartIcons();
+    }
+
+    // --- FUNGSI KERANJANG (CART) ---
+    function addToCart(id, name, image, price, slug) {
+        let cart = JSON.parse(localStorage.getItem('velora_cart')) || [];
+        let index = cart.findIndex(item => item.id === id);
+
+        if (index === -1) {
+            cart.push({ id, name, image, price, slug, quantity: 1 });
+        } else {
+            cart[index].quantity += 1;
+        }
+
+        localStorage.setItem('velora_cart', JSON.stringify(cart));
+        updateCartUI();
+        showToast(`🛒 ${name} ditambah ke Keranjang!`);
+    }
+
+    // --- UPDATE UI SISTEM ---
+    function updateCartUI() {
+        let cart = JSON.parse(localStorage.getItem('velora_cart')) || [];
+        const badge = document.getElementById('nav-cart-count');
+        let totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+        if (badge) {
+            if (totalItems > 0) {
+                badge.innerText = totalItems;
+                badge.classList.remove('opacity-0', 'scale-0');
+                badge.classList.add('opacity-100', 'scale-100');
+            } else {
+                badge.classList.add('opacity-0', 'scale-0');
+            }
+        }
     }
 
     function updateHeartIcons() {
         let wishlist = JSON.parse(localStorage.getItem('velora_wishlist')) || [];
-        
         const badge = document.getElementById('nav-wishlist-count');
         const navHeart = document.getElementById('nav-heart-icon');
         
@@ -159,22 +214,24 @@
 
         document.querySelectorAll('[id^="heart-icon-"]').forEach(icon => {
             const id = icon.id.replace('heart-icon-', '');
-            const isInWishlist = wishlist.some(item => item.id == id);
-            
-            if (isInWishlist) {
-                icon.classList.remove('text-gray-400');
+            if (wishlist.some(item => item.id == id)) {
                 icon.classList.add('text-red-500');
                 icon.setAttribute('fill', 'currentColor');
             } else {
                 icon.classList.remove('text-red-500');
-                icon.classList.add('text-gray-400');
                 icon.setAttribute('fill', 'none');
             }
         });
     }
 
-    document.addEventListener('DOMContentLoaded', updateHeartIcons);
-    window.addEventListener('storage', updateHeartIcons);
+    document.addEventListener('DOMContentLoaded', () => {
+        updateHeartIcons();
+        updateCartUI();
+    });
+    window.addEventListener('storage', () => {
+        updateHeartIcons();
+        updateCartUI();
+    });
     </script>
 </body>
 </html>

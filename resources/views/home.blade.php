@@ -95,16 +95,21 @@
                     <h3 class="text-sm md:text-base font-bold text-gray-800 line-clamp-2 mb-2 group-hover:text-amber-600 transition h-10 md:h-12">
                         {{ $product->name }}
                     </h3>
-                    <div class="mt-auto pt-3 flex items-center justify-between border-t border-gray-50">
-                        <span class="text-amber-600 font-black text-base md:text-xl">
-                            Rp{{ number_format($product->price, 0, ',', '.') }}
-                        </span>
-                        
-                        <div class="md:hidden bg-amber-50 p-2 rounded-lg text-amber-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
-                            </svg>
+                    
+                    <div class="mt-auto">
+                        <div class="flex items-center justify-between mb-4 pt-3 border-t border-gray-50">
+                            <span class="text-amber-600 font-black text-base md:text-xl">
+                                Rp{{ number_format($product->price, 0, ',', '.') }}
+                            </span>
                         </div>
+
+                        <button onclick="addToCart('{{ $product->id }}', '{{ $product->name }}', '{{ $product->getThumbnailUrl() }}', '{{ $product->price }}', '{{ $product->slug }}')"
+                                class="w-full bg-gray-900 text-white py-3 rounded-xl text-xs font-bold hover:bg-amber-600 transition-all flex items-center justify-center gap-2 group/btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover/btn:animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 11h14l1 12H4L5 11z" />
+                            </svg>
+                            Tambah ke Keranjang
+                        </button>
                     </div>
                 </div>
             </div>
@@ -120,24 +125,4 @@
         .custom-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
-
-    <script>
-        function toggleWishlist(id, name, image, price, slug) {
-            let wishlist = JSON.parse(localStorage.getItem('velora_wishlist')) || [];
-            let index = wishlist.findIndex(item => item.id === id);
-
-            if (index === -1) {
-                wishlist.push({ id, name, image, price, slug });
-            } else {
-                wishlist.splice(index, 1);
-            }
-
-            localStorage.setItem('velora_wishlist', JSON.stringify(wishlist));
-            
-            // MEMANGGIL FUNGSI GLOBAL DI MASTER.BLADE.PHP
-            if (typeof updateWishlistUI === "function") {
-                updateWishlistUI();
-            }
-        }
-    </script>
 @endsection
